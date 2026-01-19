@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphDigitizer 3.0 | Auto-Detection</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.473.0/dist/umd/lucide.min.js"
+        integrity="sha384-wB13QW3u6twSB0L9C2vdVl+93uSZEWRFrRlHqIjG9jcctrZO+9z145aCi5B8eFWo"
+        crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(15, 23, 42, 0.95);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-primary: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --crosshair-color: #ff9800;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-primary) var(--bg-dark);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 340px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-num {
+            background: rgba(255, 255, 255, 0.05);
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 0.6rem;
+        }
+
+        /* INPUTS & CONTROLS */
+        .control-group {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.85rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-wrapper {
+            flex: 1;
+        }
+
+        .input-wrapper label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-bottom: 0.25rem;
+        }
+
+        .value-display {
+            float: right;
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        input[type="number"],
+        input[type="range"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 0.4rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* CUSTOM CHECKBOX & TOGGLES */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 4px 0;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* BUTTONS */
+        .btn {
+            width: 100%;
+            padding: 0.65rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-danger-active {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-outline-primary {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1.5px dashed var(--accent-primary);
+            color: var(--accent-primary);
+            margin-top: 0.25rem;
+            padding: 0.6rem;
+        }
+
+        .btn-outline-primary:hover {
+            background: rgba(99, 102, 241, 0.12);
+        }
+
+        .btn-danger-ghost {
+            color: var(--danger);
+            background: transparent;
+            border: 1px solid transparent;
+            opacity: 0.7;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-danger-ghost:hover {
+            border-color: var(--danger);
+            opacity: 1;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        /* COLOR PICKER UI */
+        .color-preview-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        /* DATASETS LIST */
+        .dataset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .dataset-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+
+        .dataset-item.active {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .dataset-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.65rem;
+        }
+
+        /* MAIN CANVAS AREA */
+        .main-area {
+            flex: 1;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+            cursor: none;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+
+        .upload-overlay.hidden {
+            display: none;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            padding: 4rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .drop-zone.drag-active {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% {
+                border-color: var(--accent-primary);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+            }
+
+            70% {
+                border-color: var(--accent-hover);
+                box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+            }
+
+            100% {
+                border-color: var(--accent-primary);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+
+        .coord-tooltip {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            pointer-events: none;
+            border: 1px solid var(--border-color);
+            z-index: 30;
+            color: var(--warning);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 500px;
+            max-width: 90%;
+            border: 1px solid var(--border-color);
+        }
+
+        .data-preview {
+            width: 100%;
+            height: 150px;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            color: #10b981;
+            padding: 0.75rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            resize: none;
+            margin-bottom: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* NEW STYLES */
+        .btn-green {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .btn-green:hover {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-green.active {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        .btn-red {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-red:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-red.active {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        .calibration-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid var(--accent-primary);
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            z-index: 50;
+            pointer-events: none;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s;
+        }
+
+        .calibration-hint h2 {
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* TOAST NOTIFICATIONS */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--accent-primary);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            font-size: 0.9rem;
+            animation: toast-in 0.3s ease-out, toast-out 0.3s ease-in 2.7s forwards;
+            pointer-events: auto;
+        }
+
+        .toast-error {
+            border-color: var(--danger);
+        }
+
+        .toast-success {
+            border-color: var(--success);
+        }
+
+        @keyframes toast-in {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toast-out {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+
+        .calibration-hint p {
+            color: var(--text-dim);
+            font-size: 1rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i data-lucide="activity"></i> GraphDigitizer 3.0
+                </div>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- 01: VIEW -->
+                <div class="step-group">
+                    <div class="section-title"><span class="step-num">01</span> View</div>
+                    <div class="control-group">
+                        <button id="btn-reset-view" class="btn btn-secondary">
+                            <i data-lucide="maximize"></i> Reset Zoom & Position
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 02: SCALE -->
+                <div class="step-group">
+                    <div class="section-title"><span class="step-num">02</span> Calibration & Scale</div>
+                    <div class="control-group">
+                        <div class="input-row">
+                            <div class="input-wrapper">
+                                <label>Min Value</label>
+                                <input type="number" id="min-y" value="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <label>Max Value</label>
+                                <input type="number" id="max-y" value="100">
+                            </div>
+                        </div>
+                        <button id="btn-calibrate" class="btn btn-secondary">
+                            <i data-lucide="scan-line"></i> Set Area (Box)
+                        </button>
+                        <div class="input-row">
+                            <div class="input-wrapper">
+                                <label>Grid X</label>
+                                <input type="number" id="grid-x" value="20" min="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <label>Grid Y</label>
+                                <input type="number" id="grid-y" value="0" min="0">
+                            </div>
+                        </div>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="snap-to-grid">
+                            <span>Snap (Grid)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 03: AUTO DETECT (NEW) -->
+                <details class="step-group">
+                    <summary class="section-title" style="margin-bottom:0">
+                        <span style="display:flex; align-items:center; gap:0.5rem; flex:1">
+                            <span class="step-num">03</span> Automation (Beta)
+                        </span>
+                        <i data-lucide="chevron-down" style="width:14px; opacity:0.7"></i>
+                    </summary>
+                    <div class="control-group" style="margin-top: 0.75rem;">
+                        <button id="btn-pick-color" class="btn btn-secondary">
+                            <i data-lucide="pipette"></i> Pick Graph Color
+                        </button>
+                        <div class="color-display">
+                            <div id="color-preview" class="color-preview-box" style="background-color: #ffffff;"></div>
+                            <span id="color-text">No color</span>
+                        </div>
+
+                        <div class="input-wrapper">
+                            <label>Color Tolerance <span id="val-tolerance" class="value-display">50</span></label>
+                            <input type="range" id="input-tolerance" min="1" max="150" value="50">
+                        </div>
+
+                        <div class="input-wrapper">
+                            <label>Simplification (RDP) <span id="val-epsilon" class="value-display">2.0</span></label>
+                            <input type="range" id="input-epsilon" min="0.1" max="10" step="0.1" value="2.0">
+                        </div>
+
+                        <label class="checkbox-wrapper" style="margin-top:0.25rem;">
+                            <input type="checkbox" id="auto-preview" checked>
+                            <span>Live Preview</span>
+                        </label>
+
+                        <div id="preview-stats" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 5px;">
+                            Found: 0 pts
+                        </div>
+
+                        <button id="btn-auto-detect" class="btn btn-primary" disabled>
+                            <i data-lucide="wand-2"></i> Detect Line
+                        </button>
+                    </div>
+                </details>
+
+                <!-- 04: DATASETS -->
+                <div class="step-group">
+                    <div class="section-title"><span class="step-num">04</span> Manual Edit</div>
+                    <div id="datasets-container" class="dataset-list"></div>
+
+                    <button id="btn-add-dataset" class="btn btn-outline-primary">
+                        <i data-lucide="plus-circle"></i> Add new series
+                    </button>
+
+                    <div class="input-row" style="margin-top: 0.5rem">
+                        <button id="btn-mode-digitize" class="btn btn-green active">
+                            <i data-lucide="mouse-pointer-2"></i> Add
+                        </button>
+                        <button id="btn-mode-delete" class="btn btn-red">
+                            <i data-lucide="eraser"></i> Delete
+                        </button>
+                    </div>
+
+                    <button id="btn-undo" class="btn btn-secondary" style="margin-top: 0.25rem">
+                        <i data-lucide="undo-2"></i> Undo (Ctrl+Z)
+                    </button>
+                </div>
+
+
+                <!-- 05: OPTIMIZATION -->
+                <details class="step-group">
+                    <summary class="section-title">
+                        <span style="display:flex; align-items:center; gap:0.5rem; flex:1">
+                            <span class="step-num">05</span> Series Optimization
+                        </span>
+                        <i data-lucide="chevron-down" style="width:14px; opacity:0.7"></i>
+                    </summary>
+                    <div class="control-group" style="margin-top: 0.75rem;">
+                        <div class="input-wrapper">
+                            <label>Simplification Strength (Epsilon): <span id="val-opt-epsilon"
+                                    class="value-display">1.0</span></label>
+                            <input type="range" id="opt-epsilon" min="0.1" max="10" step="0.1" value="1.0">
+                            <div id="opt-stats" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 5px;">
+                                Target points: -
+                            </div>
+                        </div>
+                        <button id="btn-simplify" class="btn btn-secondary">
+                            <i data-lucide="minimize-2"></i> Simplify active series
+                        </button>
+                    </div>
+
+                    <!-- Interpolation Section -->
+                    <div class="control-group"
+                        style="margin-top: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                        <div class="input-wrapper">
+                            <label>Interpolation (Max gap px): <span id="val-opt-interp"
+                                    class="value-display">50</span></label>
+                            <input type="range" id="opt-interp" min="5" max="200" step="5" value="50">
+                            <div id="opt-interp-stats"
+                                style="font-size: 0.75rem; color: var(--text-dim); margin-top: 5px;">
+                                Points after interpolation: -
+                            </div>
+                        </div>
+                        <button id="btn-interpolate" class="btn btn-secondary">
+                            <i data-lucide="activity"></i> Interpolate gaps
+                        </button>
+                    </div>
+                </details>
+
+                <!-- 06: EXPORT -->
+                <details class="step-group" open>
+                    <summary class="section-title">
+                        <span style="display:flex; align-items:center; gap:0.5rem; flex:1">
+                            <span class="step-num">06</span> Export Results
+                        </span>
+                        <i data-lucide="chevron-down" style="width:14px; opacity:0.7"></i>
+                    </summary>
+                    <div class="control-group" style="margin-top: 0.75rem;">
+                        <button id="btn-show-export" class="btn btn-primary" disabled>
+                            <i data-lucide="download"></i> Download Data
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button id="btn-clear-data" class="btn btn-danger-ghost">
+                            <i data-lucide="trash"></i> Clear points and calibration
+                        </button>
+                        <button id="btn-reset-all" class="btn btn-danger-ghost" style="border:none;">
+                            <i data-lucide="image-plus"></i> Upload New Image
+                        </button>
+                    </div>
+                </details>
+            </div>
+        </aside>
+
+        <!-- MAIN AREA -->
+        <main class="main-area" id="main-area">
+            <canvas id="graph-canvas"></canvas>
+
+            <div id="upload-overlay" class="upload-overlay">
+                <div class="drop-zone" id="drop-zone">
+                    <i data-lucide="upload-cloud" size="48"
+                        style="margin-bottom: 1rem; color: var(--accent-primary);"></i>
+                    <h3>Upload Image File</h3>
+                    <p style="font-size: 0.85rem; opacity: 0.6; margin-top: 0.5rem;">Graph in PNG, JPG or BMP format
+                    </p>
+                    <input type="file" id="file-input" hidden accept="image/*">
+                </div>
+            </div>
+
+            <div class="coord-tooltip">
+                <span id="coord-display">Upload image...</span>
+            </div>
+
+            <div id="calibration-hint" class="calibration-hint hidden">
+                <h2>Define Area (BOX)</h2>
+                <p>Draw a rectangle over the coordinate system area.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- EXPORT MODAL -->
+    <div id="export-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header" style="display:flex; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>Data Export</h3>
+                <button id="btn-close-modal" style="background:none; border:none; color:white; cursor:pointer;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <textarea id="export-output" class="data-preview" readonly></textarea>
+            <div style="display:flex; gap: 0.5rem;">
+                <button id="btn-copy" class="btn btn-primary">
+                    <i data-lucide="copy"></i> Copy to clipboard
+                </button>
+                <button id="btn-download-csv" class="btn btn-secondary">
+                    <i data-lucide="file-text"></i> Download .CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        lucide.createIcons();
+
+        const PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#3b82f6', '#ef4444'];
+
+        const state = {
+            image: null,
+            datasets: [{ id: 1, name: 'Series 1', color: PALETTE[0], points: [] }],
+            activeDatasetId: 1,
+            mode: 'digitize', // 'calibrate', 'digitize', 'delete', 'pick-color'
+            calibration: { rect: null, isDragging: false, startPos: null },
+            view: { scale: 1, offsetX: 0, offsetY: 0 },
+            mouse: { x: 0, y: 0, rawX: 0, rawY: 0 },
+            isPanning: false,
+            panStart: { x: 0, y: 0 },
+            hoveredPointIdx: null,
+            autoDetect: {
+                selectedColor: null, // {r, g, b}
+                tolerance: 50,
+                epsilon: 2.0
+            },
+
+            history: [], // For Undo
+            lastScale: { min: 0, max: 100 }, // For sticky points
+            previewPoints: [], // For auto-detect live preview
+            activeOptimizationPreview: null // unused for now, directly modifying probably better or use Undo
+        };
+
+        const els = {
+            canvas: document.getElementById('graph-canvas'),
+            ctx: document.getElementById('graph-canvas').getContext('2d'),
+            mainArea: document.getElementById('main-area'),
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            uploadOverlay: document.getElementById('upload-overlay'),
+            coordDisplay: document.getElementById('coord-display'),
+            datasetsContainer: document.getElementById('datasets-container'),
+            minY: document.getElementById('min-y'),
+            maxY: document.getElementById('max-y'),
+            gridX: document.getElementById('grid-x'),
+            gridY: document.getElementById('grid-y'),
+            snapToGrid: document.getElementById('snap-to-grid'),
+
+            // Buttons
+            btnCalibrate: document.getElementById('btn-calibrate'),
+            btnShowExport: document.getElementById('btn-show-export'),
+            exportModal: document.getElementById('export-modal'),
+            exportOutput: document.getElementById('export-output'),
+            btnDownloadCsv: document.getElementById('btn-download-csv'),
+            btnAddDataset: document.getElementById('btn-add-dataset'),
+            btnClearData: document.getElementById('btn-clear-data'),
+            btnResetAll: document.getElementById('btn-reset-all'),
+            btnResetView: document.getElementById('btn-reset-view'),
+            btnDigitizeMode: document.getElementById('btn-mode-digitize'),
+            btnDeleteMode: document.getElementById('btn-mode-delete'),
+
+            // Auto Detect Controls
+            btnPickColor: document.getElementById('btn-pick-color'),
+            colorPreview: document.getElementById('color-preview'),
+            colorText: document.getElementById('color-text'),
+            inputTolerance: document.getElementById('input-tolerance'),
+            valTolerance: document.getElementById('val-tolerance'),
+            inputEpsilon: document.getElementById('input-epsilon'),
+            valEpsilon: document.getElementById('val-epsilon'),
+            btnAutoDetect: document.getElementById('btn-auto-detect'),
+            calibrationHint: document.getElementById('calibration-hint'),
+            autoPreview: document.getElementById('auto-preview'),
+            previewStats: document.getElementById('preview-stats'),
+
+            // Optimization
+            optEpsilon: document.getElementById('opt-epsilon'),
+            valOptEpsilon: document.getElementById('val-opt-epsilon'),
+            btnSimplify: document.getElementById('btn-simplify'),
+            optStats: document.getElementById('opt-stats'),
+
+            // Interpolation
+            optInterp: document.getElementById('opt-interp'),
+            valOptInterp: document.getElementById('val-opt-interp'),
+            btnInterpolate: document.getElementById('btn-interpolate'),
+            optInterpStats: document.getElementById('opt-interp-stats')
+        };
+
+        function init() {
+            window.addEventListener('resize', handleResize);
+            els.dropZone.addEventListener('click', () => els.fileInput.click());
+            els.fileInput.addEventListener('change', (e) => processImage(e.target.files[0]));
+            els.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                els.dropZone.classList.add('drag-active');
+            });
+            els.dropZone.addEventListener('dragleave', () => {
+                els.dropZone.classList.remove('drag-active');
+            });
+            els.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                els.dropZone.classList.remove('drag-active');
+                processImage(e.dataTransfer.files[0]);
+            });
+
+            els.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            els.canvas.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            els.mainArea.addEventListener('wheel', handleWheel, { passive: false });
+
+            els.btnCalibrate.addEventListener('click', startCalibration);
+            document.getElementById('btn-undo').addEventListener('click', undoPoint);
+            els.btnResetAll.addEventListener('click', resetAll);
+            els.btnClearData.addEventListener('click', clearDataOnly);
+            els.btnAddDataset.addEventListener('click', addNewDataset);
+            els.btnShowExport.addEventListener('click', showExport);
+            document.getElementById('btn-close-modal').addEventListener('click', () => els.exportModal.classList.add('hidden'));
+            document.getElementById('btn-copy').addEventListener('click', copyToClipboard);
+            els.btnDownloadCsv.addEventListener('click', downloadCSV);
+            els.btnResetView.addEventListener('click', fitImage);
+
+            els.btnDigitizeMode.addEventListener('click', () => setMode('digitize'));
+            els.btnDeleteMode.addEventListener('click', () => setMode('delete'));
+
+            // Auto Detect Listeners
+            els.btnPickColor.addEventListener('click', () => {
+                setMode('pick-color');
+            });
+            els.inputTolerance.addEventListener('input', (e) => {
+                state.autoDetect.tolerance = parseInt(e.target.value);
+                els.valTolerance.innerText = e.target.value;
+                if (els.autoPreview.checked) triggerPreview();
+            });
+            els.inputEpsilon.addEventListener('input', (e) => {
+                state.autoDetect.epsilon = parseFloat(e.target.value);
+                els.valEpsilon.innerText = e.target.value;
+                if (els.autoPreview.checked) triggerPreview();
+            });
+            els.autoPreview.addEventListener('change', () => {
+                if (els.autoPreview.checked) triggerPreview();
+                else {
+                    state.previewPoints = [];
+                    render();
+                }
+            });
+            els.btnAutoDetect.addEventListener('click', runAutoDetection);
+
+            // Optimization Listeners
+            els.optEpsilon.addEventListener('input', (e) => {
+                els.valOptEpsilon.innerText = e.target.value;
+                calcOptimizationDisplay();
+            });
+            els.btnSimplify.addEventListener('click', simplifyActiveDataset);
+
+            // Interpolation Listeners
+            els.optInterp.addEventListener('input', (e) => {
+                els.valOptInterp.innerText = e.target.value;
+                calcInterpolationDisplay();
+            });
+            els.btnInterpolate.addEventListener('click', interpolateActiveDataset);
+
+            renderDatasetsList();
+
+            // Add Undo Shortcut
+            window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    undoPoint();
+                }
+            });
+
+            // Scale Change Listeners for Sticky Points
+            state.lastScale.min = parseFloat(els.minY.value) || 0;
+            state.lastScale.max = parseFloat(els.maxY.value) || 100;
+
+            const updateScale = () => {
+                const newMin = parseFloat(els.minY.value) || 0;
+                const newMax = parseFloat(els.maxY.value) || 100;
+
+                // Recalculate existing points to keep them at same visual position
+                const oldMin = state.lastScale.min;
+                const oldMax = state.lastScale.max;
+                const rangeOld = oldMax - oldMin;
+                const rangeNew = newMax - newMin;
+
+                if (rangeOld === 0 || Math.abs(rangeNew) < 1e-9) {
+                    if (Math.abs(rangeNew) < 1e-9) showToast("Invalid Range (Min=Max)", "error");
+                    return;
+                }
+
+                state.datasets.forEach(ds => {
+                    ds.points.forEach(p => {
+                        // relative position (0..1) from bottom min
+                        // y = max - rel * (max - min)  => rel = (max - y) / (max - min)
+                        const rel = (oldMax - p.y) / rangeOld;
+                        // new y
+                        p.y = newMax - rel * rangeNew;
+                    });
+                });
+
+                state.lastScale.min = newMin;
+                state.lastScale.max = newMax;
+                render();
+            };
+
+            els.minY.addEventListener('change', updateScale);
+            els.maxY.addEventListener('change', updateScale);
+
+            handleResize();
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function setMode(m) {
+            state.mode = m;
+            els.btnDigitizeMode.classList.toggle('active', m === 'digitize');
+            els.btnDeleteMode.classList.toggle('active', m === 'delete');
+            els.btnPickColor.classList.toggle('active', m === 'pick-color');
+
+            // Reset calibrate button visuals if switching away
+            if (m !== 'calibrate') els.btnCalibrate.classList.remove('active');
+
+            if (m === 'delete') {
+                els.btnDeleteMode.classList.add('active'); // Red active
+            } else {
+                els.btnDeleteMode.classList.remove('active');
+            }
+            // Digitizer button
+            if (m === 'digitize') els.btnDigitizeMode.classList.add('active'); // Green
+            else els.btnDigitizeMode.classList.remove('active');
+
+            updateTooltip();
+            render();
+        }
+
+        function processImage(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (img.width * img.height > 25000000) {
+                        showToast("Image too large (>25MP)", "error");
+                        return;
+                    }
+                    state.image = img;
+                    els.uploadOverlay.classList.add('hidden');
+                    fitImage();
+                    startCalibration();
+
+                    // Show Hint
+                    els.calibrationHint.classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function fitImage() {
+            if (!state.image) return;
+            const sW = els.mainArea.clientWidth;
+            const sH = els.mainArea.clientHeight;
+            const scale = Math.min(sW / state.image.width, sH / state.image.height) * 0.95;
+            state.view.scale = scale;
+            state.view.offsetX = (sW - state.image.width * scale) / 2;
+            state.view.offsetY = (sH - state.image.height * scale) / 2;
+            render();
+        }
+
+        function handleResize() {
+            els.canvas.width = els.mainArea.clientWidth;
+            els.canvas.height = els.mainArea.clientHeight;
+            if (state.image) fitImage();
+            render();
+        }
+
+        function handleWheel(e) {
+            if (!state.image) return;
+            e.preventDefault();
+            const factor = Math.pow(1.1, -e.deltaY / 100);
+            const rect = els.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const rawX = (mouseX - state.view.offsetX) / state.view.scale;
+            const rawY = (mouseY - state.view.offsetY) / state.view.scale;
+            const newScale = Math.max(0.01, Math.min(100, state.view.scale * factor));
+            state.view.offsetX = mouseX - rawX * newScale;
+            state.view.offsetY = mouseY - rawY * newScale;
+            state.view.scale = newScale;
+            render();
+        }
+
+        function getRawCoords(cx, cy) {
+            const rect = els.canvas.getBoundingClientRect();
+            const mx = cx - rect.left;
+            const my = cy - rect.top;
+            // ix, iy are coordinates relative to the original image dimensions
+            let ix = (mx - state.view.offsetX) / state.view.scale;
+            let iy = (my - state.view.offsetY) / state.view.scale;
+
+            if (state.mode === 'digitize' && els.snapToGrid.checked && state.calibration.rect) {
+                const r = state.calibration.rect;
+                const divX = parseInt(els.gridX.value) || 0;
+                const divY = parseInt(els.gridY.value) || 0;
+
+                if (divX > 1) {
+                    const stepX = r.w / (divX - 1);
+                    ix = r.x + Math.round((ix - r.x) / stepX) * stepX;
+                }
+                if (divY > 1) {
+                    const stepY = r.h / (divY - 1);
+                    iy = r.y + Math.round((iy - r.y) / stepY) * stepY;
+                }
+            }
+            return { ix, iy, mx, my };
+        }
+
+        function handleMouseDown(e) {
+            if (!state.image) return;
+            if (e.button === 2) {
+                state.isPanning = true;
+                state.panStart = { x: e.clientX, y: e.clientY };
+                return;
+            }
+            const { ix, iy } = getRawCoords(e.clientX, e.clientY);
+
+            if (state.mode === 'pick-color') {
+                pickColorAt(ix, iy);
+                setMode('digitize'); // auto switch back after pick
+                return;
+            }
+
+            if (state.mode === 'calibrate') {
+                state.calibration.isDragging = true;
+                state.calibration.startPos = { x: ix, y: iy };
+                state.calibration.rect = { x: ix, y: iy, w: 0, h: 0 };
+            } else if (state.mode === 'digitize') {
+                if (!state.calibration.rect) return;
+                const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+                const valY = mapPixelToValue(iy);
+                const newPoint = { x: ix, y: valY };
+                ds.points.push(newPoint);
+                ds.points.sort((a, b) => a.x - b.x);
+
+                // History
+                state.history.push({ type: 'add', datasetId: ds.id, point: newPoint });
+
+                renderDatasetsList();
+            } else if (state.mode === 'delete') {
+                if (state.hoveredPointIdx !== null) {
+                    const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+                    const deletedPoint = ds.points[state.hoveredPointIdx];
+
+                    // History
+                    state.history.push({ type: 'delete', datasetId: ds.id, point: deletedPoint });
+
+                    ds.points.splice(state.hoveredPointIdx, 1);
+                    state.hoveredPointIdx = null;
+                    renderDatasetsList();
+                }
+            }
+            render();
+        }
+
+        // --- AUTO DETECT LOGIC ---
+
+        function pickColorAt(x, y) {
+            // Create a temp canvas to extract pixel from original image (ignoring zoom/scale)
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.image.width;
+            tempCanvas.height = state.image.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(state.image, 0, 0);
+
+            const pixel = tCtx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+            state.autoDetect.selectedColor = { r: pixel[0], g: pixel[1], b: pixel[2] };
+
+            // UI Update
+            const rgbStr = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+            els.colorPreview.style.backgroundColor = rgbStr;
+            els.colorText.innerText = rgbStr;
+            els.btnAutoDetect.disabled = false;
+
+            // Auto Trigger Preview if checkbox is checked
+            if (els.autoPreview.checked) triggerPreview();
+        }
+
+        function colorMatch(r, g, b, target, tolerance) {
+            const dist = Math.sqrt(
+                Math.pow(r - target.r, 2) +
+                Math.pow(g - target.g, 2) +
+                Math.pow(b - target.b, 2)
+            );
+            return dist <= tolerance;
+        }
+
+        function triggerPreview() {
+            // Debounce or immediate? Immediate for responsiveness
+            if (!state.image || !state.autoDetect.selectedColor || !state.calibration.rect) return;
+            const pts = detectPoints(true); // true = preview mode, returns array
+            if (pts) {
+                state.previewPoints = pts;
+                els.previewStats.innerText = `Found: ${pts.length} pts`;
+                render();
+            }
+        }
+
+        function runAutoDetection() {
+            if (!state.image || !state.autoDetect.selectedColor || !state.calibration.rect) {
+                showToast("First upload an image, calibrate it and select a color!", "error");
+                return;
+            }
+
+            const simplified = detectPoints(false);
+            if (!simplified || simplified.length === 0) {
+                showToast("No points found. Increase tolerance.", "error");
+                return;
+            }
+
+            // Convert to app format and add to dataset
+            const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+
+            if (ds.points.length > 0) {
+                if (!confirm(`Series already has ${ds.points.length} points. Do you want to append detected points?`)) return;
+            }
+
+            simplified.forEach(p => {
+                const valY = mapPixelToValue(p.y);
+                const newP = { x: p.x, y: valY };
+                ds.points.push(newP);
+                // History (bulk add - optimize history size? maybe store array of added points)
+                // For simplicity, we just push one history entry for the "batch" if possible, 
+                // but our current history is point-by-point. 
+                // Let's create a special history type "batch-add" later or just loop.
+                // Keeping it simple: no individual history for auto-detect batch for now or user will hate ctrl-z 1000 times
+            });
+
+            // Custom History Entry for Batch
+            state.history.push({
+                type: 'batch-add',
+                datasetId: ds.id,
+                points: simplified.map(p => ({ x: p.x, y: mapPixelToValue(p.y) }))
+            });
+
+            ds.points.sort((a, b) => a.x - b.x);
+            state.previewPoints = []; // Clear preview
+            renderDatasetsList();
+            render();
+
+            showToast(`Added ${simplified.length} points.`, "success");
+        }
+
+        function detectPoints(isPreview) {
+            const rBox = state.calibration.rect;
+            const startX = Math.floor(rBox.x);
+            const endX = Math.floor(rBox.x + rBox.w);
+            const startY = Math.floor(rBox.y);
+            const endY = Math.floor(rBox.y + rBox.h);
+
+            // Use temp canvas for processing full resolution image
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.image.width;
+            tempCanvas.height = state.image.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(state.image, 0, 0);
+
+            // Get image data for the calibrated area ONLY
+            // clamp
+            const safeX = Math.max(0, startX);
+            const safeY = Math.max(0, startY);
+            const safeW = Math.min(state.image.width - safeX, endX - safeX);
+            const safeH = Math.min(state.image.height - safeY, endY - safeY);
+
+            if (safeW <= 0 || safeH <= 0) return null;
+
+            const imgData = tCtx.getImageData(safeX, safeY, safeW, safeH);
+            const data = imgData.data;
+            const targetColor = state.autoDetect.selectedColor;
+            const tol = state.autoDetect.tolerance;
+
+            let detectedRawPoints = [];
+
+            // Scan
+            for (let x = 0; x < safeW; x++) {
+                let sumY = 0;
+                let count = 0;
+
+                for (let y = 0; y < safeH; y++) {
+                    const index = (y * safeW + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+
+                    if (colorMatch(r, g, b, targetColor, tol)) {
+                        sumY += y;
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    const avgY = sumY / count;
+                    detectedRawPoints.push({ x: x + safeX, y: avgY + safeY });
+                }
+            }
+
+            if (detectedRawPoints.length === 0) return [];
+
+            if (detectedRawPoints.length > 10000) {
+                showToast(`Too many points (${detectedRawPoints.length}). Decimating for performance.`, "warning");
+                // Decimate to approx 5000
+                const factor = Math.ceil(detectedRawPoints.length / 5000);
+                detectedRawPoints = detectedRawPoints.filter((_, i) => i % factor === 0);
+            }
+
+            const epsilon = state.autoDetect.epsilon;
+            const simplified = ramerDouglasPeucker(detectedRawPoints, epsilon);
+            return simplified;
+        }
+
+        function calcOptimizationDisplay(showPreview = true) {
+            const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+            if (!ds || ds.points.length < 3) {
+                els.optStats.innerText = "Not enough points";
+                if (showPreview) { state.previewPoints = []; render(); }
+                return;
+            }
+
+            const rawPoints = ds.points.map(p => ({ x: p.x, y: mapValueToPixel(p.y) }));
+            const eps = parseFloat(els.optEpsilon.value);
+            const simp = ramerDouglasPeucker(rawPoints, eps);
+            els.optStats.innerText = `Target points: ${simp.length} (of ${ds.points.length})`;
+
+            if (showPreview) {
+                state.previewPoints = simp;
+                render();
+            }
+        }
+
+        function simplifyActiveDataset() {
+            const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+            if (ds.points.length < 3) {
+                showToast("Not enough points to simplify", "error");
+                return;
+            }
+
+            // Convert logic points (value Y) back to pixel Y for RDP? 
+            // RDP is spatial. Our X is pixels (kinda), Y is Value. 
+            // Ideally we should process in PIXELS to maintain visual fidelity.
+            // So: Map ValueY -> PixelY -> RDP -> Map ValueY
+
+            const rawPoints = ds.points.map(p => ({
+                x: p.x,
+                y: mapValueToPixel(p.y)
+            }));
+
+            const epsilon = parseFloat(els.optEpsilon.value);
+            const simplified = ramerDouglasPeucker(rawPoints, epsilon);
+
+            // Map back
+            const finalPoints = simplified.map(p => ({
+                x: p.x,
+                y: mapPixelToValue(p.y)
+            }));
+
+            // Save history (Batch replace?)
+            // We'll treat this as a delete-all + add-new batch to support undo, 
+            // but simpler to just store "old points" in history for restore.
+            state.history.push({
+                type: 'restore-points',
+                datasetId: ds.id,
+                points: [...ds.points] // copy old points
+            });
+
+            ds.points = finalPoints;
+            state.previewPoints = []; // clear preview
+            renderDatasetsList();
+            calcOptimizationDisplay(false); // Update stats
+            render();
+            showToast(`Simplified from ${rawPoints.length} to ${finalPoints.length} points.`, "success");
+        }
+
+        // --- INTERPOLATION ---
+
+        function calcInterpolationDisplay(showPreview = true) {
+            const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+            if (!ds || ds.points.length < 2) {
+                els.optInterpStats.innerText = "-";
+                if (showPreview) { state.previewPoints = []; render(); }
+                return;
+            }
+            const rawPoints = ds.points.map(p => ({ x: p.x, y: mapValueToPixel(p.y) }));
+            const maxDist = parseInt(els.optInterp.value);
+            const interpolated = performInterpolation(rawPoints, maxDist);
+
+            els.optInterpStats.innerText = `Points after interpolation: ${interpolated.length} (of ${ds.points.length})`;
+
+            if (showPreview) {
+                state.previewPoints = interpolated;
+                render();
+            }
+        }
+
+        function interpolateActiveDataset() {
+            const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+            if (ds.points.length < 2) {
+                showToast("Not enough points to interpolate", "error");
+                return;
+            }
+
+            const rawPoints = ds.points.map(p => ({ x: p.x, y: mapValueToPixel(p.y) }));
+            const maxDist = parseInt(els.optInterp.value);
+            const interpolated = performInterpolation(rawPoints, maxDist);
+
+            const finalPoints = interpolated.map(p => ({
+                x: p.x,
+                y: mapPixelToValue(p.y)
+            }));
+
+            // History
+            state.history.push({
+                type: 'restore-points',
+                datasetId: ds.id,
+                points: [...ds.points]
+            });
+
+            ds.points = finalPoints;
+            state.previewPoints = []; // clear preview
+            renderDatasetsList();
+            calcInterpolationDisplay(false);
+            render();
+            showToast(`Interpolated to ${finalPoints.length} points.`, "success");
+        }
+
+        function performInterpolation(points, maxDist) {
+            if (points.length < 2) return points;
+            const result = [points[0]];
+
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const dist = Math.abs(p2.x - p1.x);
+
+                if (dist > maxDist) {
+                    const count = Math.floor(dist / maxDist);
+                    for (let j = 1; j <= count; j++) {
+                        const t = j / (count + 1);
+                        result.push({
+                            x: p1.x + (p2.x - p1.x) * t,
+                            y: p1.y + (p2.y - p1.y) * t
+                        });
+                    }
+                }
+                result.push(p2);
+            }
+            return result;
+        }
+
+        // RDP Algorithm
+        function ramerDouglasPeucker(points, epsilon) {
+            if (points.length < 3) return points;
+            let dmax = 0;
+            let index = 0;
+            const end = points.length - 1;
+
+            for (let i = 1; i < end; i++) {
+                const d = perpendicularDistance(points[i], points[0], points[end]);
+                if (d > dmax) {
+                    index = i;
+                    dmax = d;
+                }
+            }
+
+            if (dmax > epsilon) {
+                const res1 = ramerDouglasPeucker(points.slice(0, index + 1), epsilon);
+                const res2 = ramerDouglasPeucker(points.slice(index), epsilon);
+                return res1.slice(0, res1.length - 1).concat(res2);
+            } else {
+                return [points[0], points[end]];
+            }
+        }
+
+        function perpendicularDistance(p, p1, p2) {
+            let area = Math.abs(0.5 * (p1.x * p2.y + p2.x * p.y + p.x * p1.y - p2.x * p1.y - p.x * p2.y - p1.x * p.y));
+            let bottom = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+            return (bottom === 0) ? 0 : (area * 2) / bottom;
+        }
+
+        // -----------------------
+
+        function handleMouseMove(e) {
+            if (state.isPanning) {
+                state.view.offsetX += e.clientX - state.panStart.x;
+                state.view.offsetY += e.clientY - state.panStart.y;
+                state.panStart = { x: e.clientX, y: e.clientY };
+                render();
+                return;
+            }
+            const { ix, iy, mx, my } = getRawCoords(e.clientX, e.clientY);
+            state.mouse = { rawX: ix, rawY: iy, x: mx, y: my };
+
+            if (state.mode === 'calibrate' && state.calibration.isDragging) {
+                const s = state.calibration.startPos;
+                state.calibration.rect = {
+                    x: Math.min(s.x, ix), y: Math.min(s.y, iy),
+                    w: Math.abs(ix - s.x), h: Math.abs(iy - s.y)
+                };
+            }
+
+            // Find closest point for deletion mode
+            if (state.mode === 'delete') {
+                const ds = state.datasets.find(d => d.id === state.activeDatasetId);
+                let minDist = 15 / state.view.scale; // threshold
+                let foundIdx = null;
+                ds.points.forEach((p, idx) => {
+                    const py = mapValueToPixel(p.y);
+                    const d = Math.sqrt(Math.pow(p.x - ix, 2) + Math.pow(py - iy, 2));
+                    if (d < minDist) {
+                        minDist = d;
+                        foundIdx = idx;
+                    }
+                });
+                state.hoveredPointIdx = foundIdx;
+            } else {
+                state.hoveredPointIdx = null;
+            }
+
+            updateTooltip();
+            render();
+        }
+
+        function handleMouseUp(e) {
+            if (e.button === 2) { state.isPanning = false; return; }
+            if (state.mode === 'calibrate' && state.calibration.isDragging) {
+                state.calibration.isDragging = false;
+                state.mode = 'digitize';
+                els.btnCalibrate.classList.remove('active');
+                els.btnShowExport.disabled = false;
+                els.calibrationHint.classList.add('hidden'); // Hide hint
+                setMode('digitize');
+            }
+            render();
+        }
+
+        function updateTooltip() {
+            if (!state.image) return;
+            if (state.mode === 'pick-color') {
+                els.coordDisplay.textContent = "Click on the graph line to pick its color";
+                els.canvas.style.cursor = "crosshair";
+            } else if (state.mode === 'calibrate') {
+                els.coordDisplay.textContent = "Calibration: Drag a rectangle over the data area";
+                els.canvas.style.cursor = "crosshair";
+            } else if (state.mode === 'delete') {
+                els.coordDisplay.textContent = state.hoveredPointIdx !== null ? "Click to delete highlighted point" : "Delete mode (active series)";
+                els.canvas.style.cursor = "pointer";
+            } else if (state.calibration.rect) {
+                const valY = mapPixelToValue(state.mouse.rawY);
+                els.coordDisplay.textContent = `Y Value: ${valY.toFixed(3)}`;
+                els.canvas.style.cursor = "none";
+            } else {
+                els.canvas.style.cursor = "default";
+            }
+        }
+
+        function startCalibration() {
+            setMode('calibrate');
+            state.calibration.rect = null;
+            els.btnCalibrate.classList.add('active');
+            render();
+        }
+
+        function mapPixelToValue(py) {
+            const r = state.calibration.rect;
+            if (!r || r.h === 0) return 0;
+            const minY = parseFloat(els.minY.value);
+            const maxY = parseFloat(els.maxY.value);
+            if (Math.abs(maxY - minY) < 1e-9) return minY;
+            const relY = (py - r.y) / r.h;
+            return maxY - (relY * (maxY - minY));
+        }
+
+        function mapValueToPixel(val) {
+            const r = state.calibration.rect;
+            if (!r) return 0;
+            const minY = parseFloat(els.minY.value);
+            const maxY = parseFloat(els.maxY.value);
+            const rangeY = maxY - minY;
+            if (Math.abs(rangeY) < 1e-9) return r.y;
+            const relY = (maxY - val) / rangeY;
+            return r.y + relY * r.h;
+        }
+
+        function render() {
+            const ctx = els.ctx;
+            ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+            if (!state.image) return;
+
+            // Image
+            ctx.drawImage(state.image, state.view.offsetX, state.view.offsetY, state.image.width * state.view.scale, state.image.height * state.view.scale);
+
+            // Calibration Box & Grid
+            if (state.calibration.rect) {
+                const r = state.calibration.rect;
+                const sx = state.view.offsetX + r.x * state.view.scale;
+                const sy = state.view.offsetY + r.y * state.view.scale;
+                const sw = r.w * state.view.scale;
+                const sh = r.h * state.view.scale;
+
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(sx, sy, sw, sh);
+
+                // Glow if Delete Mode
+                if (state.mode === 'delete') {
+                    ctx.shadowColor = '#ef4444';
+                    ctx.shadowBlur = 15;
+                    ctx.strokeStyle = '#ef4444';
+                } else {
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#06b6d4';
+                }
+
+                ctx.lineWidth = 2;
+                ctx.strokeRect(sx, sy, sw, sh);
+                ctx.shadowBlur = 0; // Reset
+
+                ctx.setLineDash([2, 4]);
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+                const divX = parseInt(els.gridX.value) || 0;
+                const divY = parseInt(els.gridY.value) || 0;
+
+                if (divX > 1) {
+                    for (let i = 0; i < divX; i++) {
+                        let lx = sx + (sw / (divX - 1)) * i;
+                        ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx, sy + sh); ctx.stroke();
+                    }
+                }
+                if (divY > 1) {
+                    for (let i = 0; i < divY; i++) {
+                        let ly = sy + (sh / (divY - 1)) * i;
+                        ctx.beginPath(); ctx.moveTo(sx, ly); ctx.lineTo(sx + sw, ly); ctx.stroke();
+                    }
+                }
+                ctx.setLineDash([]);
+            }
+
+            // Datasets
+            state.datasets.forEach(ds => {
+                const isActive = ds.id === state.activeDatasetId;
+                ctx.strokeStyle = ds.color;
+                ctx.fillStyle = ds.color;
+
+                // Opacity for inactive ones
+                ctx.globalAlpha = isActive ? 1.0 : 0.4;
+                ctx.lineWidth = isActive ? 3 : 1.5;
+
+                ctx.beginPath();
+                ds.points.forEach((p, i) => {
+                    const pixelY = mapValueToPixel(p.y);
+                    const x = state.view.offsetX + p.x * state.view.scale;
+                    const y = state.view.offsetY + pixelY * state.view.scale;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+
+                ds.points.forEach((p, idx) => {
+                    const pixelY = mapValueToPixel(p.y);
+                    const x = state.view.offsetX + p.x * state.view.scale;
+                    const y = state.view.offsetY + pixelY * state.view.scale;
+                    const radius = isActive ? 4 : 2; // slightly smaller for auto-gen density
+
+                    ctx.beginPath();
+                    // Highlight red if hovered in delete mode
+                    if (isActive && state.mode === 'delete' && state.hoveredPointIdx === idx) {
+                        ctx.fillStyle = '#ef4444';
+                        ctx.arc(x, y, radius + 3, 0, Math.PI * 2);
+                    } else {
+                        ctx.fillStyle = ds.color;
+                        ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    }
+                    ctx.fill();
+                });
+            });
+
+            // Preview Points (Auto-Detect)
+            if (state.previewPoints.length > 0) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'difference';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+
+                // Draw lines
+                ctx.beginPath();
+                state.previewPoints.forEach((p, i) => {
+                    const x = state.view.offsetX + p.x * state.view.scale;
+                    const y = state.view.offsetY + p.y * state.view.scale;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+
+                // Draw vertices
+                ctx.fillStyle = '#ffffff';
+                state.previewPoints.forEach((p) => {
+                    const x = state.view.offsetX + p.x * state.view.scale;
+                    const y = state.view.offsetY + p.y * state.view.scale;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                ctx.restore();
+            }
+
+            ctx.globalAlpha = 1.0;
+
+            // Crosshair (only in digitize/calibrate/pick modes)
+            if (state.mode !== 'delete' && state.mouse.x > 0) {
+                ctx.strokeStyle = state.mode === 'pick-color' ? '#fff' : '#ff9800';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(state.mouse.x, 0); ctx.lineTo(state.mouse.x, els.canvas.height);
+                ctx.moveTo(0, state.mouse.y); ctx.lineTo(els.canvas.width, state.mouse.y);
+                ctx.stroke();
+
+                // Magnifier circle for pick color
+                if (state.mode === 'pick-color') {
+                    ctx.beginPath();
+                    ctx.arc(state.mouse.x, state.mouse.y, 20, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function addNewDataset() {
+            const id = Date.now(); // More robust ID
+            state.datasets.push({ id, name: `Series ${state.datasets.length + 1}`, color: PALETTE[state.datasets.length % PALETTE.length], points: [] });
+            state.activeDatasetId = id;
+            setMode('digitize'); // Auto switch to "Add" mode
+            renderDatasetsList();
+            render();
+            lucide.createIcons();
+        }
+
+        function renderDatasetsList() {
+            els.datasetsContainer.innerHTML = '';
+            state.datasets.forEach(ds => {
+                const item = document.createElement('div');
+                item.className = `dataset-item ${ds.id === state.activeDatasetId ? 'active' : ''}`;
+
+                const content = document.createElement('div');
+                content.style.display = 'flex';
+                content.style.alignItems = 'center';
+                content.style.flex = '1';
+
+                const colorSpan = document.createElement('span');
+                colorSpan.className = 'dataset-color';
+                colorSpan.style.background = ds.color;
+                content.appendChild(colorSpan);
+
+                const nameText = document.createTextNode(ds.name);
+                content.appendChild(nameText);
+
+                content.onclick = () => { state.activeDatasetId = ds.id; renderDatasetsList(); render(); };
+
+                const info = document.createElement('div');
+                info.style.display = 'flex';
+                info.style.alignItems = 'center';
+                info.style.gap = '8px';
+
+                const count = document.createElement('span');
+                count.style.fontSize = '0.7rem';
+                count.style.opacity = '0.6';
+                count.innerText = `${ds.points.length} pts`;
+
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '<i data-lucide="trash-2" style="width:14px; height:14px;"></i>';
+                delBtn.style.background = 'none';
+                delBtn.style.border = 'none';
+                delBtn.style.color = 'var(--danger)';
+                delBtn.style.cursor = 'pointer';
+                delBtn.style.opacity = '0.4';
+                delBtn.style.padding = '4px';
+                delBtn.onmouseover = () => delBtn.style.opacity = '1';
+                delBtn.onmouseout = () => delBtn.style.opacity = '0.4';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteDataset(ds.id);
+                };
+
+                info.appendChild(count);
+                if (state.datasets.length > 1) {
+                    info.appendChild(delBtn);
+                }
+
+                item.appendChild(content);
+                item.appendChild(info);
+                els.datasetsContainer.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function deleteDataset(id) {
+            if (state.datasets.length <= 1) return;
+            if (!confirm("Are you sure you want to delete this data series?")) return;
+
+            state.datasets = state.datasets.filter(d => d.id !== id);
+            if (state.activeDatasetId === id) {
+                state.activeDatasetId = state.datasets[0].id;
+            }
+
+            // Clear history related to this dataset to avoid undo errors
+            state.history = state.history.filter(h => h.datasetId !== id);
+
+            renderDatasetsList();
+            render();
+            showToast("Series deleted", "info");
+        }
+
+        function undoPoint() {
+            if (state.history.length === 0) return;
+            const action = state.history.pop();
+            const ds = state.datasets.find(d => d.id === action.datasetId);
+            if (!ds) return;
+
+            if (action.type === 'add') {
+                // Remove the added point
+                // Find point by exact reference or coord? Ref matches if object is same.
+                const idx = ds.points.indexOf(action.point);
+                if (idx !== -1) {
+                    ds.points.splice(idx, 1);
+                }
+            } else if (action.type === 'delete') {
+                // Restore deleted point
+                ds.points.push(action.point);
+                ds.points.sort((a, b) => a.x - b.x);
+            } else if (action.type === 'batch-add') {
+                // Remove batch points
+                // This assumes no other operations happened in between that messed up equality
+                // Ideally match coordinates.
+                // Filter out points that are in action.points
+                // Point objects in action.points are value-based {x,y}.
+                const toRemove = action.points;
+                ds.points = ds.points.filter(dp =>
+                    !toRemove.some(rp => Math.abs(rp.x - dp.x) < 0.001 && Math.abs(rp.y - dp.y) < 0.0001)
+                );
+            } else if (action.type === 'restore-points') {
+                ds.points = action.points; // Full restore
+            }
+            renderDatasetsList();
+            render();
+        }
+
+        function clearDataOnly() {
+            if (!confirm("Are you sure you want to clear all data? (Image will remain)")) return;
+            state.datasets = [{ id: 1, name: 'Series 1', color: PALETTE[0], points: [] }];
+            state.activeDatasetId = 1;
+            state.calibration.rect = null;
+            els.btnShowExport.disabled = true;
+            els.btnAutoDetect.disabled = true;
+            els.colorPreview.style.backgroundColor = '#fff';
+            els.colorText.innerText = 'No color';
+            state.calibration.rect = null;
+            state.history = []; // Clear history
+            els.btnShowExport.disabled = true;
+            els.btnAutoDetect.disabled = true;
+            els.colorPreview.style.backgroundColor = '#fff';
+            els.colorText.innerText = 'No color';
+            startCalibration();
+            els.calibrationHint.classList.remove('hidden'); // Show hint again
+            renderDatasetsList();
+            render();
+            lucide.createIcons();
+        }
+
+        function resetAll() {
+            if (!confirm("Are you sure you want to upload a new image?")) return;
+            location.reload();
+        }
+
+        function showExport() {
+            let output = "";
+            state.datasets.forEach(ds => {
+                if (ds.points.length === 0) return;
+
+                // Map points to Y values only and join as a comma-separated row
+                const row = ds.points.map(p => p.y.toFixed(3)).join(", ");
+                output += row + "\n";
+            });
+            els.exportOutput.value = output.trim();
+            els.exportModal.classList.remove('hidden');
+        }
+
+        function resample(data, count) {
+            const result = [];
+            const step = (data.length - 1) / (count - 1);
+            for (let i = 0; i < count; i++) {
+                const idx = i * step;
+                const low = Math.floor(idx);
+                const high = Math.ceil(idx);
+                const w = idx - low;
+                result.push(data[low] * (1 - w) + data[high] * (high >= data.length ? 0 : w));
+            }
+            return result;
+        }
+
+        function copyToClipboard() {
+            els.exportOutput.select();
+            document.execCommand('copy');
+            const btn = document.getElementById('btn-copy');
+            btn.innerHTML = `<i data-lucide="check"></i> Copied!`;
+            setTimeout(() => { btn.innerHTML = `<i data-lucide="copy"></i> Copy to clipboard`; lucide.createIcons(); }, 2000);
+        }
+
+        function downloadCSV() {
+            const content = els.exportOutput.value;
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'graph_export.csv';
+            a.click();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
